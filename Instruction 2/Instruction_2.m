@@ -67,10 +67,10 @@ F = 2*Gamma'*Omega*Phi;
 % (a)(b) Constraints: Compact formulation
 % See getWLc.m
 [W, L, c, Mcal, Ecal, Dcal] = getWLc(A,B,xmax,xmin,umax,umin,Gamma,Phi);
-CcalTest = zeros((height(umin)+height(umax)+height(xmin)+height(xmax))*N+height(xmin)+height(xmax),1);
-DcalTest = zeros((height(umin)+height(umax)+height(xmin)+height(xmax))*N+height(xmin)+height(xmax),nx);
-McalTest = zeros((height(umin)+height(umax)+height(xmin)+height(xmax))*N+height(xmin)+height(xmax),N*nx);
-EcalTest = zeros((height(umin)+height(umax)+height(xmin)+height(xmax))*N+height(xmin)+height(xmax),N*nu);
+% CcalTest = zeros((height(umin)+height(umax)+height(xmin)+height(xmax))*N+height(xmin)+height(xmax),1);
+% DcalTest = zeros((height(umin)+height(umax)+height(xmin)+height(xmax))*N+height(xmin)+height(xmax),nx);
+% McalTest = zeros((height(umin)+height(umax)+height(xmin)+height(xmax))*N+height(xmin)+height(xmax),N*nx);
+% EcalTest = zeros((height(umin)+height(umax)+height(xmin)+height(xmax))*N+height(xmin)+height(xmax),N*nu);
 
 % %% (c) Closed-loop trajectory
 % k_sim = 500;
