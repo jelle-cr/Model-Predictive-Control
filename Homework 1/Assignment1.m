@@ -5,7 +5,7 @@ clear all;
 clc
 
 Ts = 0.1;
-N = 3;
+N = 20;
 
 %% Question 4.1 (discrete-time state-space prediction model)
 Ac = [-0.003 0.039 0 -0.322; -0.065 -0.319 7.74 0; 0.02 -0.101 -0.429 0; 0 0 1 0];
@@ -23,13 +23,19 @@ D = ss_d.D;
 
 [phi, gamma] = predictionModel(A,B,N,n,m);
 
-%% Cost function
-Q = 1*eye(n);
-R = 1*eye(m);
-[K,P,~] = dlqr(A,B,Q,R);                    % In MATLAB documentation, u(k)=-Kx(k)
+%% Cost function (Likely incorrect due to the cost function being different from the instructions)
+Q = 10*eye(n);
+R = 0.1*eye(m);
+[~,P,~] = dlqr(A,B,Q,R);                    % P is the solution of the ARE in discrete-time
 
 omega = blkdiag(kron(eye(N-1),Q), P);       % Kronecker product
 psi = kron(eye(N),R);
 
 G = 2*(psi+gamma'*omega*gamma);
 F = 2*gamma'*omega*phi;
+
+%% Question 4.2 (design a model predictive controller)
+h0 = 0;
+v0 = 10;
+x0 = [v0; -2.2541; -2.23e-17; -0.2912];
+u0 = [0.3792; 0.0203];
