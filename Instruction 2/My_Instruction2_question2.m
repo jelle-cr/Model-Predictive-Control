@@ -24,7 +24,7 @@ Q = 1*eye(n);
 R = 1*eye(m);
 [K,P,~] = dlqr(A,B,Q,R);                    % In MATLAB documentation, u(k)=-Kx(k)
 
-omega = blkdiag(kron(eye(N-1),Q), P);       %Kronecker product
+omega = blkdiag(kron(eye(N-1),Q), P);       % Kronecker product
 psi = kron(eye(N),R);
 
 G = 2*(psi+gamma'*omega*gamma);
