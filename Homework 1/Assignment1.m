@@ -31,11 +31,23 @@ u0 = [0.3792; 0.0203];
 y0 = [v0; h0];
 
 ref = zeros(2,t+2*N);
-ref(1,1:200) = 10;
-ref(1,201:end) = 8;
-ref(2,1:100) = 0;
-ref(2,101:end) = 5;
-ref = reshape(ref,2*(t+2*N),1);
+for i = 1:width(ref)
+    if(i<201)
+        ref(1,i) = 10;
+    else
+        ref(1,i) = 8;
+    end
+    if(i<101)
+        ref(2,i) = 0;
+    else
+        ref(2,i) = 5;
+    end
+end
+% ref(1,1:200) = 10;
+% ref(1,201:end) = 8;
+% ref(2,1:100) = 0;
+% ref(2,101:end) = 5;
+% ref = reshape(ref,2*(t+2*N),1);
 
 %% Constraints and matrices
 constr.statelb = [-25;-25;-pi/20;-pi/2;-15]; % v,w,q,theta,h
@@ -66,44 +78,32 @@ T(2:nT+1:end) = -1;
 %% Question 4.2 (design a model predictive controller)
 k_sim = t;
 %% unconstrained
-G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-F = 2*gamma'*C_bar'*omega*C_bar*phi;
-v = [u0 ; zeros(2*(N-1),1)];
-xk = [x0 zeros(n,k_sim)];
+xk = [x0 zeros(n,t)];
+yk = [y0 zeros(p,t)];
 uk = [zeros(m,1) u0 zeros(m,t-1)];
-yk = [y0 zeros(p,k_sim)];       %output at each time index k
+xk(:,2) = A*xk(:,1)+B*uk(:,1); % Calculate x1 (because we know u0)
+yk(:,2) = C*xk(:,1);
+v = [u0; zeros(2*(N-1),1)];
+Rk = double.empty;
+for i = 0:(N-1)
+   Rk = [Rk; ref(1,1+i)];
+   Rk = [Rk; ref(2,1+i)];
+end
+G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+F = 2*(gamma'*C_bar'*omega*C_bar*phi*x0-gamma'*C_bar'*omega*Rk-T'*psi*v);
+M = zeros(m,2*N);
+M(1:m,1:m) = eye(m);
 for k = 1:k_sim
-    %F = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,1)-gamma'*C_bar'*omega*ref(k:(k-1+2*N))-2*T'*psi*v);
-
-    K_mpc = -[eye(m) zeros(m,p*(N-1))]*G^-1*F;
-    uk(:,k) = K_mpc*xk(:,k);
+    Rk = double.empty;
+    for i = 0:(N-1)
+       Rk = [Rk; ref(1,k+i)];
+       Rk = [Rk; ref(2,k+i)];
+    end
+    uk(:,k) = -M*inv(G)*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v); 
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
     yk(:,k+1) = C*xk(:,k);
+    v = [uk(:,k) ; zeros(2*(N-1),1)];
 end
-figure()
-subplot(1,2,1)
-stairs(0:t,yk(1,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$v [ft/sec]$','Interpreter','latex');
-
-subplot(1,2,2)
-stairs(0:t,yk(2,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$h [ft/sec]$','Interpreter','latex');
-sgtitle('Outputs')
-
-figure()
-subplot(1,2,1)
-stairs(0:t,uk(1,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$e$','Interpreter','latex');
-
-subplot(1,2,2)
-stairs(0:t,uk(2,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$\tau$','Interpreter','latex');
-sgtitle('Inputs')
-
 %% constrained
 % xk = [x0 zeros(n,k_sim)];       %state at each time index k
 % yk = [y0 zeros(p,k_sim)];       %output at each time index k
@@ -132,15 +132,41 @@ sgtitle('Inputs')
 %     check = check+1
 % end
 % % 
-% figure()
-% subplot(1,2,1)
-% stairs(0:t,yk)
-% xlabel('$k$','Interpreter','latex');
-% ylabel('$y$','Interpreter','latex');
-% 
-% subplot(1,2,2)
-% stairs(0:t,uk)
-% xlabel('$k$','Interpreter','latex');
-% ylabel('$u$','Interpreter','latex');
-% 
-% 
+figure()
+subplot(1,2,1)
+stairs(0:t,yk(1,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$v [ft/sec]$','Interpreter','latex');
+
+subplot(1,2,2)
+stairs(0:t,yk(2,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$h [ft/sec]$','Interpreter','latex');
+sgtitle('Outputs')
+
+figure()
+subplot(1,2,1)
+stairs(0:t,uk(1,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$e$','Interpreter','latex');
+
+subplot(1,2,2)
+stairs(0:t,uk(2,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$\tau$','Interpreter','latex');
+sgtitle('Inputs')
+
+ref = reshape(ref,[2,t+2*N]);
+figure()
+subplot(1,2,1)
+stairs(0:t-1,ref(1,1:t)')
+xlabel('$k$','Interpreter','latex');
+ylabel('$v ref$','Interpreter','latex');
+ylim([min(ref(1,:))-1 max(ref(1,:))+1]);
+
+subplot(1,2,2)
+stairs(0:t-1,ref(2,1:t)')
+xlabel('$k$','Interpreter','latex');
+ylabel('$h ref$','Interpreter','latex');
+sgtitle('reference');
+ylim([min(ref(2,:))-1 max(ref(2,:))+1]);
