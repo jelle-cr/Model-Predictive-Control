@@ -58,30 +58,6 @@ for i = 1:2:length(ref)
     ref2(k) = ref(i+1);
 end
 
-refL = zeros(2,t+2*N);
-for i = 1:width(refL)
-    if(i<201)
-        refL(1,i) = 10;
-    else
-        refL(1,i) = 8;
-    end
-    if(i<101)
-        refL(2,i) = 0;
-    else
-        refL(2,i) = 5;
-    end
-end
-refL(1,1) = 1;
-refL(2,1) = 2;
-for i = 2:length(refL)
-    refL(1,i) = refL(2,i-1)+1;
-    refL(2,i) = refL(1,i)+1;
-end
-ref(1) = 1;
-for i = 2:length(ref)
-    ref(i) = ref(i-1)+1;
-end
-
 %% Constraints and matrices
 constr.statelb = [-25;-25;-pi/20;-pi/2;-15]; % v,w,q,theta,h
 constr.stateub =  [25;25;pi/20;pi/2;15]; % v,w,q,theta,h
@@ -115,68 +91,17 @@ uk = [u0 zeros(m,t)];
 xk = [x0 A*x0+B*u0 zeros(n,t)];
 yk = [y0 C*xk(:,2) zeros(p,t-1)];
 v = [u0; zeros(2*(N-1),1)];
-%Rk = ref(2:p*N+1);
 G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-%F = 2*(gamma'*C_bar'*omega*C_bar*phi*x0-gamma'*C_bar'*omega*Rk-T'*psi*v);
-%M = [eye(m) zeros(m,2*N-2)];
 i = 0;
-for k = 2:5%(k_sim+1)             %time starts at k = 0, xk is known for k = 1
-    i = i+2;                    %used for indexing due to k = 0 corresponding to i = 1;
-    Rk = ref((i+1):(i+p*N))
-%     Rss = double.empty;
-%     for j = 0:N-1
-%        Rss = [Rss; refL(1,k+j)];
-%        Rss = [Rss; refL(2,k+j)];
-%     end
-%     Rss
-%     Rk = double.empty;
-%     for i = 1:N
-%        Rk = [Rk; ref(1,k+i)];
-%        Rk = [Rk; ref(2,k+i)];
-%     end
+for k = 2:(k_sim+1)               %time starts at k = 0, xk is known for k = 1
+    i = i+2;                      %used for indexing due to reference being twice as long;
+    Rk = ref((i+1):(i+p*N));
     v = [uk(:,k-1); zeros(2*(N-1),1)];
     Uk = -2*G^-1*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
-    %uk(:,k) = -M*inv(G)*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v); 
     uk(:,k) = Uk(1:m);
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
     yk(:,k) = C*xk(:,k);
 end
-% uk = [zeros(m,1) u0 zeros(m,t-1)];
-% xk = [x0 A*x0+B*u0 zeros(n,t-1)];
-% yk = [y0 C*x0 zeros(p,t-1)];
-% v = [u0; zeros(2*(N-1),1)];
-% %Rk = ref(2:p*N+1);
-% G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-% %F = 2*(gamma'*C_bar'*omega*C_bar*phi*x0-gamma'*C_bar'*omega*Rk-T'*psi*v);
-% M = [eye(m) zeros(m,2*N-2)];
-% for k = 1:k_sim
-%     Rk = ref(k+1:(k+1+p*N)); 
-%     uk(:,k) = -M*inv(G)*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v); 
-%     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
-%     yk(:,k+1) = C*xk(:,k);
-%     v = [uk(:,k); zeros(2*(N-1),1)];
-% end
-
-% Rk = double.empty;
-% for i = 0:(N-1)
-%    Rk = [Rk; ref(1,1+i)];
-%    Rk = [Rk; ref(2,1+i)];
-% end
-% G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
-% F = 2*(gamma'*C_bar'*omega*C_bar*phi*x0-gamma'*C_bar'*omega*Rk-T'*psi*v);
-% M = [eye(m) zeros(m,2*N-2)];
-% for k = 1:k_sim
-%     Rk = double.empty;
-%     for i = 0:(N-1)
-%        Rk = [Rk; ref(1,k+i)];
-%        Rk = [Rk; ref(2,k+i)];
-%     end
-%     
-%     uk(:,k) = -M*inv(G)*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v); 
-%     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
-%     yk(:,k+1) = C*xk(:,k);
-%     v = [uk(:,k) ; zeros(2*(N-1),1)];
-% end
 %% constrained
 % xk = [x0 zeros(n,k_sim)];       %state at each time index k
 % yk = [y0 zeros(p,k_sim)];       %output at each time index k
