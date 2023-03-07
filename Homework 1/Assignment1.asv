@@ -71,16 +71,6 @@ for i = 1:width(refL)
         refL(2,i) = 5;
     end
 end
-refL(1,1) = 1;
-refL(2,1) = 2;
-for i = 2:length(refL)
-    refL(1,i) = refL(2,i-1)+1;
-    refL(2,i) = refL(1,i)+1;
-end
-ref(1) = 1;
-for i = 2:length(ref)
-    ref(i) = ref(i-1)+1;
-end
 
 %% Constraints and matrices
 constr.statelb = [-25;-25;-pi/20;-pi/2;-15]; % v,w,q,theta,h
@@ -119,16 +109,9 @@ v = [u0; zeros(2*(N-1),1)];
 G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
 %F = 2*(gamma'*C_bar'*omega*C_bar*phi*x0-gamma'*C_bar'*omega*Rk-T'*psi*v);
 %M = [eye(m) zeros(m,2*N-2)];
-i = 0;
-for k = 2:5%(k_sim+1)             %time starts at k = 0, xk is known for k = 1
-    i = i+2;                    %used for indexing due to k = 0 corresponding to i = 1;
-    Rk = ref((i+1):(i+p*N))
-%     Rss = double.empty;
-%     for j = 0:N-1
-%        Rss = [Rss; refL(1,k+j)];
-%        Rss = [Rss; refL(2,k+j)];
-%     end
-%     Rss
+for k = 2:(k_sim+1)             %time starts at k = 0, xk is known for k = 1
+    %i = k+1;                    %used for indexing due to k = 0 corresponding to i = 1;
+    Rk = ref((k+1):(k+p*N))
 %     Rk = double.empty;
 %     for i = 1:N
 %        Rk = [Rk; ref(1,k+i)];
@@ -229,19 +212,19 @@ xlabel('$k$','Interpreter','latex');
 ylabel('$\tau$','Interpreter','latex');
 sgtitle('Inputs')
 
-figure()
-subplot(1,2,1)
-stairs(0:t-1,ref1(1:t))
-xlabel('$k$','Interpreter','latex');
-ylabel('$v ref$','Interpreter','latex');
-ylim([min(ref1)-1 max(ref1)+1]);
-
-subplot(1,2,2)
-stairs(0:t-1,ref2(1:t))
-xlabel('$k$','Interpreter','latex');
-ylabel('$h ref$','Interpreter','latex');
-sgtitle('reference');
-ylim([min(ref2)-1 max(ref2)+1]);
+% figure()
+% subplot(1,2,1)
+% stairs(0:t-1,ref(1,1:t))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$v ref$','Interpreter','latex');
+% ylim([min(ref(1,:))-1 max(ref(1,:))+1]);
+% 
+% subplot(1,2,2)
+% stairs(0:t-1,ref(2,1:t))
+% xlabel('$k$','Interpreter','latex');
+% ylabel('$h ref$','Interpreter','latex');
+% sgtitle('reference');
+% ylim([min(ref(2,:))-1 max(ref(2,:))+1]);
 
 % ref = reshape(ref,[2,t+2*N]);
 % figure()
