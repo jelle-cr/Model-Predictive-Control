@@ -113,14 +113,14 @@ for k = 2:k_sim                 %time starts at k = 0, xk is known for k = 1
     i = k+1;                    %used for indexing due to k = 0 corresponding to i = 1;
     %Rk = ref((k+1):(k+p*N)); 
     Rk = double.empty;
-    for i = 0:(N-1)
+    for i = 1:N
        Rk = [Rk; ref(1,k+i)];
        Rk = [Rk; ref(2,k+i)];
     end
     v = [uk(:,k-1); zeros(2*(N-1),1)];
     Uk = -2*G^-1*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
     %uk(:,k) = -M*inv(G)*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v); 
-    uk(:,k) = Uk(1:2);
+    uk(:,k) = Uk(1:m);
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
     yk(:,k) = C*xk(:,k);
 end
