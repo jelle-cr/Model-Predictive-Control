@@ -70,6 +70,11 @@ constr.inputub =  [20;20];
 constr.deltainputlb = [-15;-15];
 constr.deltainputub =  [15;15];
 
+umin = [-20; -20];
+umax = [20; 20];
+xmin = [-25; -25; -pi/20; -pi/2];
+xmax = [25; 25; pi/20; pi/2];
+
 Q = 10*eye(p);
 R = 0.1*eye(m);
 
@@ -87,22 +92,71 @@ T(2:nT+1:end) = -1;
 %% Question 4.2 (design a model predictive controller)
 k_sim = t;
 %% unconstrained
+% uk = [u0 zeros(m,t)];
+% xk = [x0 A*x0+B*u0 zeros(n,t)];
+% yk = [y0 C*xk(:,2) zeros(p,t-1)];
+% G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+% i = 0;
+% for k = 2:(k_sim+1)               %time starts at k = 0, xk is known for k = 1
+%     i = i+2;                      %used for indexing due to reference being twice as long;
+%     Rk = ref((i+1):(i+p*N));
+%     v = [uk(:,k-1); zeros(2*(N-1),1)];
+%     Uk = -2*G^-1*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
+%     uk(:,k) = Uk(1:m);
+%     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
+%     yk(:,k) = C*xk(:,k);
+% end
+%% constrained
+[Ccal, Dcal, Ecal, Mcal] = caligraphicMatrices(umin,umax,xmin,xmax,N,n,m);  %no delta u constraints
 uk = [u0 zeros(m,t)];
 xk = [x0 A*x0+B*u0 zeros(n,t)];
 yk = [y0 C*xk(:,2) zeros(p,t-1)];
-v = [u0; zeros(2*(N-1),1)];
-G = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+H = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+L = Mcal*gamma + Ecal;
+W = -Dcal-Mcal*phi;
 i = 0;
 for k = 2:(k_sim+1)               %time starts at k = 0, xk is known for k = 1
     i = i+2;                      %used for indexing due to reference being twice as long;
     Rk = ref((i+1):(i+p*N));
     v = [uk(:,k-1); zeros(2*(N-1),1)];
-    Uk = -2*G^-1*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
+    f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
+    [Uk,fval,exitflag] = quadprog(H,f,L,Ccal+W*xk(:,k),[],[],[],[],[],[]);
+    if exitflag ~= 1
+        warning('exitflag quadprog = %d\n', exitflag)
+        if exitflag == -2
+            sprintf('Optimization problem is infeasible.')
+            break;                %optimization failed, break loop then plot results
+        end
+    end
     uk(:,k) = Uk(1:m);
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
     yk(:,k) = C*xk(:,k);
 end
-%% constrained
+%original
+% uk = [u0 zeros(m,t)];
+% xk = [x0 A*x0+B*u0 zeros(n,t)];
+% yk = [y0 C*xk(:,2) zeros(p,t-1)];
+% H = 2*(gamma'*C_bar'*omega*C_bar*gamma+T'*psi*T);
+% c = c+S*v;
+% i = 0;
+% for k = 2:(k_sim+1)               %time starts at k = 0, xk is known for k = 1
+%     i = i+2;                      %used for indexing due to reference being twice as long;
+%     Rk = ref((i+1):(i+p*N));
+%     v = [uk(:,k-1); zeros(2*(N-1),1)];
+%     c = c+S*v; 
+%     f = 2*(gamma'*C_bar'*omega*C_bar*phi*xk(:,k)-gamma'*C_bar'*omega*Rk-T'*psi*v);
+%     [Uk,fval,exitflag] = quadprog(G,f,L,c+W*xk(:,k),[],[],[],[],[],[]);
+%     if exitflag ~= 1
+%         warning('exitflag quadprog = %d\n', exitflag)
+%         if exitflag == -2
+%             sprintf('Optimization problem is infeasible.')
+%             break;                %optimization failed, break loop then plot results
+%         end
+%     end
+%     uk(:,k) = Uk(1:m);
+%     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
+%     yk(:,k) = C*xk(:,k);
+% end
 % xk = [x0 zeros(n,k_sim)];       %state at each time index k
 % yk = [y0 zeros(p,k_sim)];       %output at each time index k
 % uk = [zeros(size(u0)),u0,zeros(m,t-1)];
@@ -130,6 +184,7 @@ end
 %     check = check+1
 % end
 % % 
+%% plotting
 figure()
 subplot(1,2,1)
 stairs(0:t,yk(1,:))
@@ -141,6 +196,29 @@ stairs(0:t,yk(2,:))
 xlabel('$k$','Interpreter','latex');
 ylabel('$h [ft/sec]$','Interpreter','latex');
 sgtitle('Outputs')
+
+figure()
+subplot(2,2,1)
+stairs(0:t,xk(1,1:length(xk)-1))
+xlabel('$k$','Interpreter','latex');
+ylabel('$v [ft/sec]$','Interpreter','latex');
+
+subplot(2,2,2)
+stairs(0:t,xk(2,1:length(xk)-1))
+xlabel('$k$','Interpreter','latex');
+ylabel('$w [ft/sec]$','Interpreter','latex');
+
+subplot(2,2,3)
+stairs(0:t,xk(3,1:length(xk)-1))
+xlabel('$k$','Interpreter','latex');
+ylabel('$q [ft/sec]$','Interpreter','latex');
+
+subplot(2,2,4)
+stairs(0:t,xk(4,1:length(xk)-1))
+xlabel('$k$','Interpreter','latex');
+ylabel('$\theta [rad/sec]$','Interpreter','latex');
+sgtitle('States')
+
 
 figure()
 subplot(1,2,1)
@@ -167,18 +245,3 @@ xlabel('$k$','Interpreter','latex');
 ylabel('$h ref$','Interpreter','latex');
 sgtitle('reference');
 ylim([min(ref2)-1 max(ref2)+1]);
-
-% ref = reshape(ref,[2,t+2*N]);
-% figure()
-% subplot(1,2,1)
-% stairs(0:t-1,ref(1,1:t)')
-% xlabel('$k$','Interpreter','latex');
-% ylabel('$v ref$','Interpreter','latex');
-% ylim([min(ref(1,:))-1 max(ref(1,:))+1]);
-% 
-% subplot(1,2,2)
-% stairs(0:t-1,ref(2,1:t)')
-% xlabel('$k$','Interpreter','latex');
-% ylabel('$h ref$','Interpreter','latex');
-% sgtitle('reference');
-% ylim([min(ref(2,:))-1 max(ref(2,:))+1]);
