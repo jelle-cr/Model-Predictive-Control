@@ -24,9 +24,9 @@ function [Ccal, Dcal, Ecal, Mcal,Ebar] = caligraphicMatricesExtended(umin,umax,x
     Ecal = [Ecal; zeros(n*2+2,width(Ecal))];
 
     Ebar = double.empty;
-    E_i = [zeros(2*n,m); zeros(6,m); eye(m); -eye(m)];
+    E_i = [zeros(2*n,m); zeros(6,m); -eye(m); eye(m)];
     for i = 0:(N-1)
         Ebar = blkdiag(Ebar, E_i);
     end
-    Ebar = [Ebar; zeros(n*2+2,width(Ebar))];
+    Ebar = [Ebar; zeros(height(xmax)+height(xmin)+height(ymax)+height(ymin),width(Ebar))];
 end

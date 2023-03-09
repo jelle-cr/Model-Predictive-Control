@@ -157,18 +157,6 @@ end
 
 %% plotting
 figure()
-subplot(1,2,1)
-stairs(0:t,yk(1,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$v [ft/sec]$','Interpreter','latex');
-
-subplot(1,2,2)
-stairs(0:t,yk(2,:))
-xlabel('$k$','Interpreter','latex');
-ylabel('$h [ft/sec]$','Interpreter','latex');
-sgtitle('Outputs')
-
-figure()
 subplot(2,2,1)
 stairs(0:t,xk(1,1:length(xk)-1))
 xlabel('$k$','Interpreter','latex');
@@ -189,6 +177,7 @@ stairs(0:t,xk(4,1:length(xk)-1))
 xlabel('$k$','Interpreter','latex');
 ylabel('$\theta [rad/sec]$','Interpreter','latex');
 sgtitle('States')
+
 
 
 figure()
@@ -216,3 +205,17 @@ xlabel('$k$','Interpreter','latex');
 ylabel('$h ref$','Interpreter','latex');
 sgtitle('reference');
 ylim([min(ref2)-1 max(ref2)+1]);
+
+figure()
+subplot(1,2,1)
+stairs(0:t,yk(1,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$v [ft/sec]$','Interpreter','latex');
+grid on;
+
+subplot(1,2,2)
+stairs(0:t,yk(2,:))
+xlabel('$k$','Interpreter','latex');
+ylabel('$h [ft/sec]$','Interpreter','latex');
+sgtitle('Outputs')
+grid on;
