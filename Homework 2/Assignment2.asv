@@ -4,16 +4,14 @@ clc
 
 load 'stateMatrices.mat';
 
-Ts = 2.5*10^(-6);       % Given as 2.5 micro seconds
-t = 100;
 N = 10;
 [n,m] = size(B);
 x_ss = [10;1];
 u_ss = 0.52;
-x0 = [0.1; 1];          % Original initial condition for x bar
+x0 = [0.1; 1];          %original initial condition for x bar
 %x0 = [5; -1];
 
-shift = 'normal';       % Switch between normal or shifted system       
+shift = 'normal';       %switch between normal or shifted system       
 shift = 'shifted';
 
 %% Constraints          %defined on x bar
@@ -31,7 +29,7 @@ if(strcmp(shift,'shifted')~=1)
 end
 
 
-%% Cost function through LQR                % not used, since we use LMI
+%% Cost function through LQR
 Q = 1*eye(n);
 R = 0.1;
 %[K,P,~] = dlqr(A,B,Q,R);                   % find K and P through LQR
@@ -66,7 +64,7 @@ K = value(Y)*value(O)^-1;
 %equal2 = leftInequality2-rightInequality2;
 
 %% Terminal set
-% Terminal constraint set                       % From instruction 5
+% Terminal constraint set                   %from instruction 5
 % state constraints (A_x * x <= b_x)
 X_set = Polyhedron([-eye(n);eye(n)],[-xmin;xmax]);
 % input constraints (A_u * u <= b_u)
@@ -75,32 +73,14 @@ U_set = Polyhedron([-eye(m);eye(m)],[-umin;umax]);
 CA_set = Polyhedron([-eye(m);eye(m)]*K,[-umin;umax]);
 % input constraint admissible set
 IA_set = CA_set&X_set;
-% invariant set within input constraint admissible set
-model = LTISystem('A', A+B*K,'Ts',Ts);
-INV_set = model.invariantSet('X',IA_set);
-M_N = INV_set.A;
-b_N = INV_set.b;
 
-
-%% Required matrices
 [Ccal, Dcal, Ecal, Mcal] = caligraphicMatricesTerminalSet(umin,umax,xmin,xmax,N,n,m,M_N,b_N);
 [phi, gamma] = predictionModel(A,B,N,n,m);
 
 L = Mcal*gamma + Ecal;
 W = -Dcal-Mcal*phi;
-
-omega = blkdiag(kron(eye(N-1),Q), P);       % Kronecker product
-psi = kron(eye(N),R);
-
-G = 2*(psi+gamma'*omega*gamma);
-F = 2*gamma'*omega*phi;
-
-% (a) Feasible set of states - [-W L][x0;Uk]<=c
-Feasibleset_x0_U = Polyhedron('A',[-W L],'B',Ccal);
-Feasibleset_x0 = projection(Feasibleset_x0_U,1:2);
-
 %% MPC
-k_sim = t;
+k_sim = 300;
 xk = [x0 zeros(n,k_sim+1)];     %state at each time index k
 uk = zeros(m,k_sim+1);          %input at each time index k
                                 %From Summary_con_MPC slide:
@@ -121,7 +101,29 @@ for k = 1:k_sim+1
 end
 
 %% Plotting
-close all;
 font = 14;
-terminalSetPlot(font,Feasibleset_x0,INV_set);
-trajectoryPlot(font,k_sim,xk,uk,umin,umax,shift);
+figure
+subplot(1,2,1);
+plot(0:k_sim,xk(:,1:length(xk)-1)',LineWidth=2);
+xlim([0 k_sim]);
+xlabel('$k$',Interpreter="latex",Fontsize=font);
+if(strcmp('shifted',shift))
+    ylabel('$\bar{x}$',Interpreter="latex",Fontsize=font);
+    legend({'$\bar{x}_1$ (voltage)','$\bar{x}_2$ (current)'},Interpreter="latex",Fontsize=font);
+else
+    ylabel('$x$',Interpreter="latex",Fontsize=font);
+    legend({'$x_1$ (voltage)','$x_2$ (current)'},Interpreter="latex",Fontsize=font);
+end
+
+subplot(1,2,2);
+stairs(0:k_sim,uk,LineWidth=2);
+xlim([0 k_sim]);
+ylim([umin-0.1 umax+0.1]);
+xlabel('$k$',Interpreter="latex",Fontsize=font);
+if(strcmp('shifted',shift))
+    ylabel('$\bar{u}$  (duty cycle)',Interpreter="latex",Fontsize=font);
+else
+    ylabel('$u$ (duty cycle)',Interpreter="latex",Fontsize=font);
+end
+sgtitle('Constrained MPC for the buck converter',Interpreter="latex",Fontsize=font+4)
+
