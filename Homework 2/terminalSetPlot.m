@@ -1,10 +1,12 @@
-function terminalSetPlot(font,Feasibleset_x0,INV_set)
+function terminalSetPlot(font,X_set,Feasibleset_x0,INV_set,xk)
     figure;
-    plot(Feasibleset_x0);
+    plot(X_set,'color','green','Alpha',0.5);
     hold on;
-    plot(INV_set,'color','yellow');
+    plot(Feasibleset_x0,'Alpha',0.75);
+    plot(INV_set,'color','yellow','Alpha',0.9);
+    plot(xk(1,:),xk(2,:),'o')
     xlabel('$\bar{x}_1$ (voltage)',Interpreter="latex",Fontsize=font);
     ylabel('$\bar{x}_2$ (current)',Interpreter="latex",Fontsize=font);
     title('Feasible and terminal set',Interpreter="latex",Fontsize=font+4)
-    legend({'Feasible set', 'Terminal set'},Interpreter="latex",Fontsize=font)
+    legend({'State constraints','Feasible set', 'Terminal set'},Interpreter="latex",Fontsize=font)
 end

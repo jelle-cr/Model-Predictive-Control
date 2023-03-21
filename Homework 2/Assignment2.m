@@ -5,15 +5,17 @@ clc
 load 'stateMatrices.mat';
 
 Ts = 2.5*10^(-6);       % Given as 2.5 micro seconds
-t = 100;
+t = 300;
 N = 10;
 [n,m] = size(B);
 x_ss = [10;1];
 u_ss = 0.52;
 x0 = [0.1; 1];          % Original initial condition for x bar
-%x0 = [5; -1];
+%x0 = [5; 2];            % Outside feasible set
+%x0 = [-10; -1];         % Outside of feasible set
+%x0 = [-5; 1.5];         % In feasible set  
 
-shift = 'normal';       % Switch between normal or shifted system       
+shift = 'original';      % Switch between normal or shifted system       
 shift = 'shifted';
 
 %% Constraints          %defined on x bar
@@ -22,24 +24,9 @@ xmax = [5;2];
 umin = -0.52;
 umax = 0.43;
 
-if(strcmp(shift,'shifted')~=1)
-    xmin = xmin+x_ss;
-    xmax = xmax+x_ss;
-    umin = umin+u_ss;
-    umax = umax+u_ss;
-    x0 = x0+x_ss;
-end
-
-
-%% Cost function through LQR                % not used, since we use LMI
+%% Cost matrix definition
 Q = 1*eye(n);
 R = 0.1;
-%[K,P,~] = dlqr(A,B,Q,R);                   % find K and P through LQR
-%K = -K;                                    % K and P are found through the LMI matrix later on
-
-%leftInequality = (A+B*K)'*P*(A+B*K)-P;     % Just a check, to see whether the inequality holds
-%rightInequality = -Q-K'*R*K;
-%equal = leftInequality-rightInequality;
 
 %% LMI
 O = sdpvar(n,n);                            % O is symmetric, therefore O = O'
@@ -61,20 +48,19 @@ end
 P = value(O)^-1;
 K = value(Y)*value(O)^-1;
 
-%leftInequality2 = (A+B*K)'*P*(A+B*K)-P;        % Just a check, to see whether the inequality holds
-%rightInequality2 = -Q-K'*R*K;
-%equal2 = leftInequality2-rightInequality2;
-
-%% Terminal set
-% Terminal constraint set                       % From instruction 5
+%% Terminal set                                 % From instruction 5
 % state constraints (A_x * x <= b_x)
 X_set = Polyhedron([-eye(n);eye(n)],[-xmin;xmax]);
+
 % input constraints (A_u * u <= b_u)
-U_set = Polyhedron([-eye(m);eye(m)],[-umin;umax]);
+%U_set = Polyhedron([-eye(m);eye(m)],[-umin;umax]);
+
 % constraints admissible set
 CA_set = Polyhedron([-eye(m);eye(m)]*K,[-umin;umax]);
+
 % input constraint admissible set
 IA_set = CA_set&X_set;
+
 % invariant set within input constraint admissible set
 model = LTISystem('A', A+B*K,'Ts',Ts);
 INV_set = model.invariantSet('X',IA_set);
@@ -120,8 +106,18 @@ for k = 1:k_sim+1
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
 end
 
+%% Converting to original system
+if(strcmp(shift,'original'))
+    xk = xk+x_ss;
+    uk = uk+u_ss;
+    xmin = xmin+x_ss;
+    xmax = xmax+x_ss;
+    umin = umin+u_ss;
+    umax = umax+u_ss;
+end
+
 %% Plotting
 close all;
-font = 14;
-terminalSetPlot(font,Feasibleset_x0,INV_set);
-trajectoryPlot(font,k_sim,xk,uk,umin,umax,shift);
+font = 18;
+terminalSetPlot(font,X_set,Feasibleset_x0,INV_set,xk);
+trajectoryPlot(font,k_sim,xk,uk,xmin,xmax,umin,umax,shift);
