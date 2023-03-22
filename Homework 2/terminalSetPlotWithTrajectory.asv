@@ -1,11 +1,15 @@
-function terminalSetPlot(font,X_set,Feasibleset_x0,INV_set,xk)
+function terminalSetPlotWithTrajectory(font,X_set,Feasibleset_x0,INV_set,x1,x2,x3,x4,k_end)
     s = get(0, 'ScreenSize');
     figure('Position', [10 50 700 500]);
     plot(X_set,'color','green','Alpha',0.5);
     hold on;
-    plot(Feasibleset_x0);
+    plot(Feasibleset_x0,'color','red');
     plot(INV_set,'color','yellow');
-    %plot(xk(1,:),xk(2,:),'o');
+    plot(x1(1,1:k_end),x1(2,1:k_end),'o','Color','blue',LineWidth=1.5);
+    plot(x1(1,:),x1(2,:),'Color','blue',LineWidth=2);
+    plot(x2(1,1:k_end),x2(2,1:k_end),'+','Color','blue',LineWidth=1);
+    plot(x3(1,1:k_end),x3(2,1:k_end),'*','Color','blue',LineWidth=0.5);
+    plot(x4(1,1:k_end),x4(2,1:k_end),'*','Color','blue',LineWidth=2);
     ax = gca;
     ax.FontSize=font-6;
     xlabel('$\bar{x}_1$ [V]',Interpreter="latex",Fontsize=font);

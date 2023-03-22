@@ -10,13 +10,12 @@ N = 10;
 [n,m] = size(B);
 x_ss = [10;1];
 u_ss = 0.52;
-x0 = [0.1; 1];         % response 1, Original initial condition for x bar
-x0 = [-1.5; 1.75];     % response 2, In feasible set  
-x0 = [-5; -1];         % response 3, In feasible set  
-x0 = [2.5; 2];         % response 4, In feasible set 
-
+x0 = [0.1; 1];         % Original initial condition for x bar
 %x0 = [5; 2];            % Outside feasible set
 %x0 = [-10; -1];         % Outside of feasible set
+x0 = [-1.5; 1.75];     % In feasible set  
+x0 = [-5; -1];         % In feasible set  
+x0 = [2.5; 2];         % In feasible set  
 
 shift = 'original';      % Switch between normal or shifted system       
 shift = 'shifted';
@@ -124,32 +123,26 @@ end
 %% Plotting
 close all;
 font = 20;
-terminalSetPlot(font,X_set,Feasibleset_x0,INV_set);
+terminalSetPlot(font,X_set,Feasibleset_x0,INV_set,xk);
 trajectoryPlot(font,k_sim,xk,uk,xmin,xmax,umin,umax,shift);
 
 %% Extra plots
-load stateResponse1.mat;
-load stateResponse2.mat;
-load stateResponse3.mat;
-load stateResponse4.mat;
-
-terminalSetPlotWithTrajectory(font,X_set,Feasibleset_x0,INV_set,x1,x2,x3,x4);
-
-% N_list = [5:5:30];
-% figure; 
-% hold on;
-% for nn = 1:length(N_list)
-%     N = N_list(nn);
-%     [Ccal, Dcal, Ecal, Mcal] = caligraphicMatricesTerminalSet(umin,umax,xmin,xmax,N,n,m,M_N,b_N);
-%     [phi, gamma] = predictionModel(A,B,N,n,m);
-%     L = Mcal*gamma + Ecal;
-%     W = -Dcal-Mcal*phi;
-%     Feasibleset_x0_U = Polyhedron('A',[-W L],'B',Ccal);
-%     Feasibleset_x0(nn) = projection(Feasibleset_x0_U,1:2);
-% end
-% plot(X_set,'color','green','Alpha',0.5);
-% for nn = length(N_list):-1:1
-%     plot(Feasibleset_x0(nn),'color','red','Alpha',1-0.9/nn)
-% end
-% title('Feasible set of states for increasing N');
-% plot(INV_set,'color','yellow');
+close all;
+N_list = [1:5:30];
+figure; 
+hold on;
+for nn = 1:length(N_list)
+    N = N_list(nn);
+    [Ccal, Dcal, Ecal, Mcal] = caligraphicMatricesTerminalSet(umin,umax,xmin,xmax,N,n,m,M_N,b_N);
+    [phi, gamma] = predictionModel(A,B,N,n,m);
+    L = Mcal*gamma + Ecal;
+    W = -Dcal-Mcal*phi;
+    Feasibleset_x0_U = Polyhedron('A',[-W L],'B',Ccal);
+    Feasibleset_x0(nn) = projection(Feasibleset_x0_U,1:2);
+end
+plot(X_set,'color','green','Alpha',0.5);
+for nn = length(N_list):-1:1
+    plot(Feasibleset_x0(nn),'color','red','Alpha',1-0.9/nn)
+end
+title('Feasible set of states for increasing N');
+plot(INV_set,'color','yellow');

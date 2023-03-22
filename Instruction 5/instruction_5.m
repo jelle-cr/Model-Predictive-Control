@@ -55,6 +55,7 @@ subplot(2,2,4)
 plot(INV_set); title('INV_{set}');
 
 %% 2.2 Admissible and invariant set
+close all;
 % Second-order model
 Ac = [0 1;0 0];
 Bc = [0;-1];
