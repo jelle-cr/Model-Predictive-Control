@@ -34,6 +34,7 @@ F_bar = 2*gamma'*omega*gamma_bar;
 [Ccal, Dcal, Ecal, Mcal] = caligraphicMatrices(umin,umax,xmin,xmax,N-1,n,m);        % Also to N-1
 L = Mcal*gamma + Ecal;
 W = -Dcal-Mcal*phi;
+W_bar = -Mcal*gamma_bar;
 
 % Feasible set
 %Feasibleset_x0_U = Polyhedron('A',[-W L],'B',Ccal);
@@ -46,13 +47,15 @@ uk = zeros(m,k_sim);            %input at each time index k
 pk = zeros(N-1,k_sim);
 Pk = sin(x0(1)-x0(3))*ones(N-1,1);
 Xk = zeros(n*(N-1),1);
-Loop = 3;
+Uk_prev = zeros(m*(N-1),1);
+tolerance = 0.0005;
+Loop = 100;
 
 opt =  optimoptions('quadprog','Display','off');
 warning('off','optim:quadprog:HessianNotSym');
 for k = 1:k_sim+1
     for l = 1:Loop
-        [Uk,~,exitflag] = quadprog(G,F*xk(:,k)+F_bar*Pk,L,Ccal+W*xk(:,k),[],[],[],[],[],opt);
+        [Uk,~,exitflag] = quadprog(G,F*xk(:,k)+F_bar*Pk,L,Ccal+W*xk(:,k)+W_bar*Pk,[],[],[],[],[],opt);
         if exitflag ~= 1
             warning('exitflag quadprog = %d\n', exitflag)
             if exitflag == -2
@@ -62,7 +65,15 @@ for k = 1:k_sim+1
         end
         Xk=phi*xk(:,k)+gamma*Uk+gamma_bar*Pk;
         Pk = rhoFunction(Xk,n);
+        if(norm(Uk-Uk_prev)<tolerance)
+            break;
+        end
+        Uk_prev = Uk;
+        if(l>10)
+            warning('l = %d -> Slow Uk convergence, consider increasing tolerance\n', l)
+        end
     end
+    pk(:,k) = Pk;                       % Not necessary, but computed for analysis
     uk(:,k) = Uk(1:m);
     xk(:,k+1) = A*xk(:,k)+B1*uk(:,k)+B2*Pk(1);
 end
@@ -91,4 +102,4 @@ ylabel('$u$',FontSize=font,Interpreter='latex');
 legend({'$u_1$','$u_2$'},FontSize=font,Interpreter="latex");
 
 %figure;
-%plot(Feasibleset_x0);
+%plot(Feasibleset_x0);          % Doesn't work properly due to us having 4 states
