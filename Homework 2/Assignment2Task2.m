@@ -4,21 +4,22 @@ clc
 
 load 'stateMatrices.mat';
 
+%A(1,2)=A(1,2)+0.101096;     %shrinks feasible set drasticly
+
+
 Ts = 2.5*10^(-6);       % Given as 2.5 micro seconds
-t = 300;
+t = 500;
 N = 10;
 [n,m] = size(B);
 x_ss = [10;1];
 u_ss = 0.52;
-x0 = [0.1; 1];         % Original initial condition for x bar
+x0 = [0.1; 1];         % response 1, Original initial condition for x bar
+%x0 = [-1.5; 1.75];     % response 2, In feasible set  
+%x0 = [-5; -1];         % response 3, In feasible set  
+%x0 = [2.5; 2];         % response 4, In feasible set 
+
 %x0 = [5; 2];            % Outside feasible set
 %x0 = [-10; -1];         % Outside of feasible set
-x0 = [-1.5; 1.75];     % In feasible set  
-x0 = [-5; -1];         % In feasible set  
-x0 = [2.5; 2];         % In feasible set  
-
-shift = 'original';      % Switch between normal or shifted system       
-shift = 'shifted';
 
 %% Constraints          %defined on x bar
 xmin = [-10;-1];
@@ -91,14 +92,16 @@ Feasibleset_x0 = projection(Feasibleset_x0_U,1:2);
 
 %% MPC
 k_sim = t;
-xk = [x0 zeros(n,k_sim+1)];     %state at each time index k
+xbar = [x0 zeros(n,k_sim+1)];     %state at each time index k
+xk = [x0+x_ss zeros(n,k_sim+1)];     %state at each time index k
+ubar = zeros(m,k_sim+1);          %input at each time index k
 uk = zeros(m,k_sim+1);          %input at each time index k
                                 %From Summary_con_MPC slide:
                                 %quadprog(G,Fx(k),L,Ccal+Wx(k)
 opt =  optimoptions('quadprog','Display','off');
 warning('off','optim:quadprog:HessianNotSym');
 for k = 1:k_sim+1
-    [Uk,~,exitflag] = quadprog(G,F*xk(:,k),L,Ccal+W*xk(:,k),[],[],[],[],[],opt);
+    [Uk,~,exitflag] = quadprog(G,F*xbar(:,k),L,Ccal+W*xbar(:,k),[],[],[],[],[],opt);
     if exitflag ~= 1
         warning('exitflag quadprog = %d\n', exitflag)
         if exitflag == -2
@@ -106,43 +109,42 @@ for k = 1:k_sim+1
             break;
         end
     end
-    uk(:,k) = Uk(1:m);
+    ubar(:,k) = Uk(1:m);
+    uk(:,k) = ubar(:,k) + u_ss;
     xk(:,k+1) = A*xk(:,k)+B*uk(:,k);
-end
-
-%% Converting to original system
-if(strcmp(shift,'original'))
-    xk = xk+x_ss;
-    uk = uk+u_ss;
-    xmin = xmin+x_ss;
-    xmax = xmax+x_ss;
-    umin = umin+u_ss;
-    umax = umax+u_ss;
+    xbar(:,k+1) = xk(:,k+1) - x_ss;
 end
 
 %% Plotting
 close all;
 font = 20;
-terminalSetPlot(font,X_set,Feasibleset_x0,INV_set,xk);
-trajectoryPlot(font,k_sim,xk,uk,xmin,xmax,umin,umax,shift);
+terminalSetPlot(font,X_set,Feasibleset_x0,INV_set);
+trajectoryPlot(font,k_sim,xk,uk,xmin+x_ss,xmax+x_ss,umin+u_ss,umax+u_ss,'original');
+trajectoryPlot(font,k_sim,xbar,ubar,xmin,xmax,umin,umax,'shifted');
 
 %% Extra plots
-close all;
-N_list = [1:5:30];
-figure; 
-hold on;
-for nn = 1:length(N_list)
-    N = N_list(nn);
-    [Ccal, Dcal, Ecal, Mcal] = caligraphicMatricesTerminalSet(umin,umax,xmin,xmax,N,n,m,M_N,b_N);
-    [phi, gamma] = predictionModel(A,B,N,n,m);
-    L = Mcal*gamma + Ecal;
-    W = -Dcal-Mcal*phi;
-    Feasibleset_x0_U = Polyhedron('A',[-W L],'B',Ccal);
-    Feasibleset_x0(nn) = projection(Feasibleset_x0_U,1:2);
-end
-plot(X_set,'color','green','Alpha',0.5);
-for nn = length(N_list):-1:1
-    plot(Feasibleset_x0(nn),'color','red','Alpha',1-0.9/nn)
-end
-title('Feasible set of states for increasing N');
-plot(INV_set,'color','yellow');
+load stateResponse1.mat;
+load stateResponse2.mat;
+load stateResponse3.mat;
+load stateResponse4.mat;
+
+terminalSetPlotWithTrajectory(font,X_set,Feasibleset_x0,INV_set,x1,x2,x3,x4);
+
+% N_list = [5:5:30];
+% figure; 
+% hold on;
+% for nn = 1:length(N_list)
+%     N = N_list(nn);
+%     [Ccal, Dcal, Ecal, Mcal] = caligraphicMatricesTerminalSet(umin,umax,xmin,xmax,N,n,m,M_N,b_N);
+%     [phi, gamma] = predictionModel(A,B,N,n,m);
+%     L = Mcal*gamma + Ecal;
+%     W = -Dcal-Mcal*phi;
+%     Feasibleset_x0_U = Polyhedron('A',[-W L],'B',Ccal);
+%     Feasibleset_x0(nn) = projection(Feasibleset_x0_U,1:2);
+% end
+% plot(X_set,'color','green','Alpha',0.5);
+% for nn = length(N_list):-1:1
+%     plot(Feasibleset_x0(nn),'color','red','Alpha',1-0.9/nn)
+% end
+% title('Feasible set of states for increasing N');
+% plot(INV_set,'color','yellow');

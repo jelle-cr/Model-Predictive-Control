@@ -18,7 +18,7 @@ function trajectoryPlot(font,k_sim,xk,uk,xmin,xmax,umin,umax,shift)
         ylabel('$\bar{x}_1$ [V], $\bar{x}_2$ [A]',Interpreter="latex",Fontsize=font);
         legend({'Voltage $\bar{x}_1$','Current $\bar{x}_2$'},Interpreter="latex",Fontsize=font);
     else
-        %ylim([xmin(1) xmax(1)])
+        ylim([xmin(1) xmax(1)])
         ylabel('$x_1$ [V], $x_2$ [A]',Interpreter="latex",Fontsize=font);
         legend({'Voltage $x_1$','Current $x_2$'},Interpreter="latex",Fontsize=font);
     end
