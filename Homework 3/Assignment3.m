@@ -5,7 +5,7 @@ clc
 load stateMatrices.mat
 
 Ts = 0.1;
-N = 8;
+N = 2;
 t = 20;
 [n,m] = size(B1);
 
@@ -78,11 +78,11 @@ for k = 1:k_sim+1
     xk(:,k+1) = A*xk(:,k)+B1*uk(:,k)+B2*Pk(1);
 end
 
-%% Plotting
+%% Plotting                 % Choose between stairs and plot
 font = 18;
 figure;
 subplot(1,2,2);
-plot(0:t,xk(:,1:length(xk)-1)',LineWidth=2);
+plot(0:t,xk(:,1:length(xk)-1)',LineWidth=2);        
 grid on;
 ax = gca;
 ax.FontSize=font-6;
@@ -100,6 +100,8 @@ xlim([0 t]);
 xlabel('$k$',FontSize=font,Interpreter='latex');
 ylabel('$u$',FontSize=font,Interpreter='latex');
 legend({'$u_1$','$u_2$'},FontSize=font,Interpreter="latex");
+
+sgtitle(sprintf('Simulation for $N$ = %d',N),FontSize=font,Interpreter="latex")
 
 %figure;
 %plot(Feasibleset_x0);          % Doesn't work properly due to us having 4 states
